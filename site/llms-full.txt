@@ -98,6 +98,7 @@ Every command outputs JSON by default; pass `--human` for human-readable output.
 - `iph button <home|lock|volume_up|volume_down>` — press hardware buttons
 - `iph launch <bundle id | name> [--restart] [--env K=V]... [-- <args>...]` / `iph apps` — launch or list apps
 - `iph screenshot [-o file]` — capture PNG screenshot
+- `iph record <start|stop|status> [-o file.mp4] [--display N]` — record the screen to an MP4 (HEVC) while other commands run; record over USB; ends by itself after `record_max_secs` (default 1800)
 - `iph batch <file | ->` — execute a JSON array of steps in one call
 - `iph script <file | -> [--arg k=v]` — run QuickJS JavaScript automation in one call
 - `iph run <name> [--arg k=v]` / `iph scripts` — run or list saved scripts (`~/.config/iph/scripts/<name>.js`)
@@ -145,6 +146,7 @@ Available globals inside `iph script` (sandboxed: no filesystem, network, or pro
 - `scroll(direction, {until, max})`
 - `type(text, {clear, submit})`, `key(name)`, `button(name)`
 - `launch(app, {restart, arguments, environment})`
+- `record(action, {display})` — `start`, `stop` or `status`; scripts cannot choose the file; a recording the script leaves running ends with it (report under `recording`)
 - `waitFor(selector, {timeout_ms})`
 - `readField({selector, take, regex})`
 - `readList({row, columns, key, group, stop_below, until, max_scrolls, limit})`
@@ -154,4 +156,4 @@ Available globals inside `iph script` (sandboxed: no filesystem, network, or pro
 
 ## MCP Tools (`iph mcp`)
 
-`iph_connect`, `iph_read`, `iph_find`, `iph_tap`, `iph_swipe`, `iph_pinch`, `iph_scroll`, `iph_type`, `iph_key`, `iph_button`, `iph_launch`, `iph_apps`, `iph_screenshot`, `iph_batch`, `iph_script`, `iph_run`, `iph_scripts`, `iph_doctor`, `iph_dnd`.
+`iph_connect`, `iph_read`, `iph_find`, `iph_tap`, `iph_swipe`, `iph_pinch`, `iph_scroll`, `iph_type`, `iph_key`, `iph_button`, `iph_launch`, `iph_apps`, `iph_screenshot`, `iph_record`, `iph_batch`, `iph_script`, `iph_run`, `iph_scripts`, `iph_doctor`, `iph_dnd`.
