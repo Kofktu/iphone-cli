@@ -171,8 +171,14 @@ fn tools() -> Vec<Value> {
         ),
         tool(
             "iph_screenshot",
-            "Save a PNG screenshot to a file on this computer. Use iph_read for content; this is for looks.",
-            json!({ "path": { "type": "string", "description": "Absolute path of the PNG to write." } }),
+            "Save a PNG screenshot to a file on this computer. Use iph_read for content; this is for looks. \
+             With annotate the elements a user can act on are outlined and numbered, and the result's legend gives each number's id, role, label and frame: evidence of what was on screen. \
+             It fails with screen_changed (nothing written) when the screen moved while it was taken.",
+            json!({
+                "path": { "type": "string", "description": "Absolute path of the PNG to write." },
+                "annotate": { "type": "boolean", "description": "Draw the elements of a reading on it, numbered, and return a legend." },
+                "all": { "type": "boolean", "description": "With annotate: every on-screen element, not only those a user acts on." },
+            }),
             &["path"],
         ),
         tool(
@@ -429,6 +435,15 @@ mod tests {
         assert!(schema["properties"]["path"]["description"].as_str().unwrap().contains("absolute"));
         let parsed = crate::record::parse(&json!({"action": "start", "path": "relative.mp4"}), crate::record::default_path);
         assert_eq!(parsed.unwrap_err().message, "`path` must be an absolute path");
+    }
+
+    #[test]
+    fn iph_screenshot_offers_annotate_and_all() {
+        let tools = tools();
+        let shot = tools.iter().find(|t| t["name"] == "iph_screenshot").unwrap();
+        let props = &shot["inputSchema"]["properties"];
+        assert_eq!((props["annotate"]["type"].clone(), props["all"]["type"].clone()), (json!("boolean"), json!("boolean")));
+        assert_eq!(shot["inputSchema"]["required"], json!(["path"]));
     }
 
     #[test]

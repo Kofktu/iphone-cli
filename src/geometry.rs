@@ -1,7 +1,7 @@
 //! How the pixels of a screenshot or a recording line up with the points of
-//! a reading. A recording is only evidence when it shows the display that
-//! was read; a phone with two displays can hand over a picture of the other
-//! one.
+//! a reading. A recording or an annotated screenshot is only evidence when
+//! both show the same display; a phone with two displays can hand over a
+//! picture of the other one.
 
 use crate::reply::{Fail, Res};
 

@@ -161,6 +161,12 @@ enum Cmd {
     Screenshot {
         #[arg(short, long)]
         output: Option<String>,
+        /// Draw the elements a user can act on, numbered, and return a legend.
+        #[arg(long)]
+        annotate: bool,
+        /// With --annotate: every on-screen element.
+        #[arg(long)]
+        all: bool,
     },
     /// Record the screen to an MP4 file while other commands run: start, stop, status.
     Record {
@@ -414,7 +420,7 @@ async fn run(cli: Cli) -> i32 {
             }
         },
         Cmd::Apps => ("apps", Value::Null),
-        Cmd::Screenshot { output } => {
+        Cmd::Screenshot { output, annotate, all } => {
             let name = output.unwrap_or_else(|| {
                 format!("iph-screenshot-{}.png", clock::now_utc().replace([':', '-'], ""))
             });
@@ -422,7 +428,7 @@ async fn run(cli: Cli) -> i32 {
             let path = std::path::absolute(&name)
                 .map(|p| p.display().to_string())
                 .unwrap_or(name);
-            ("screenshot", json!({ "path": path }))
+            ("screenshot", json!({ "path": path, "annotate": annotate, "all": all }))
         }
         Cmd::Record { action, output, display } => {
             let output = match (action.as_str(), output) {

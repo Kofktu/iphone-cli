@@ -52,6 +52,8 @@ rquickjs = "0.14"
 sha2 = "0.10"
 # The tunnel's TCP stack (src/tcp, from jktcp).
 rand = "0.9"
+# Annotated screenshots: the PNG codec's zlib.
+flate2 = "1.1"
 
 [dev-dependencies]
 # src/tcp's tests move the clock by hand.

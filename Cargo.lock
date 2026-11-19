@@ -555,6 +555,7 @@ version = "0.1.7"
 dependencies = [
  "anyhow",
  "clap",
+ "flate2",
  "futures-util",
  "idevice",
  "libc",

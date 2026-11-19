@@ -327,6 +327,21 @@ impl LaunchArgs {
 #[serde(deny_unknown_fields)]
 pub struct ScreenshotArgs {
     pub path: String,
+    /// Draw the elements of a reading on it, numbered, with a legend.
+    #[serde(default)]
+    pub annotate: bool,
+    /// With `annotate`: every on-screen element, not only those a user acts on.
+    #[serde(default)]
+    pub all: bool,
+}
+
+impl ScreenshotArgs {
+    pub fn check(&self) -> Res<()> {
+        if self.all && !self.annotate {
+            return Err(Fail::invalid("`all` goes with `annotate`"));
+        }
+        Ok(())
+    }
 }
 
 pub fn parse_args<T: for<'de> Deserialize<'de>>(args: &Value) -> Res<T> {
@@ -1293,15 +1308,49 @@ impl Session {
     }
 
     pub async fn cmd_screenshot(&mut self, args: ScreenshotArgs) -> Res {
-        let png = self.screenshot_png().await?;
-        let path = std::path::PathBuf::from(&args.path);
-        if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
-            std::fs::create_dir_all(dir)
-                .map_err(|e| Fail::not_sent("write_failed", format!("{}: {e}", dir.display())))?;
+        args.check()?;
+        let write = |bytes: &[u8]| {
+            let path = std::path::PathBuf::from(&args.path);
+            if let Some(dir) = path.parent().filter(|d| !d.as_os_str().is_empty()) {
+                std::fs::create_dir_all(dir)
+                    .map_err(|e| Fail::not_sent("write_failed", format!("{}: {e}", dir.display())))?;
+            }
+            std::fs::write(&path, bytes)
+                .map_err(|e| Fail::not_sent("write_failed", format!("{}: {e}", path.display())))
+        };
+        if !args.annotate {
+            let png = self.screenshot_png().await?;
+            write(&png)?;
+            let (width, height) = crate::png::size(&png).unzip();
+            return Ok(fields! { "path": args.path, "bytes": png.len(), "width": width, "height": height });
         }
-        std::fs::write(&path, &png)
-            .map_err(|e| Fail::not_sent("write_failed", format!("{}: {e}", path.display())))?;
-        Ok(fields! { "path": args.path, "bytes": png.len() })
+
+        // The reading must describe the picture: one before and one after,
+        // and nothing is drawn unless the boxes to draw agree. A value or a
+        // label that ticks (a timer) changes no box.
+        let (_, before) = self.screen(Fresh::Force, false, BuildOptions::default()).await?;
+        let png = self.screenshot_png().await?;
+        let (_, after) = self.screen(Fresh::Force, false, BuildOptions::default()).await?;
+        if crate::annotate::boxes(&before, args.all) != crate::annotate::boxes(&after, args.all) {
+            return Err(Fail::not_sent("screen_changed", "the screen changed while the screenshot was taken").hint(t(
+                "화면이 멈춘 뒤 다시 시도하세요.",
+                "Try again once the screen holds still.",
+            )));
+        }
+        let mut image = crate::png::decode(&png).map_err(|e| Fail::not_sent("unsupported_png", e))?;
+        let geometry = crate::geometry::Geometry::fit((after.width, after.height), (image.width, image.height))?;
+        let legend = crate::annotate::draw(&mut image, &geometry, &crate::annotate::pick(&after, args.all));
+        let out = crate::png::encode(&image);
+        write(&out)?;
+        Ok(fields! {
+            "path": args.path,
+            "bytes": out.len(),
+            "width": geometry.width,
+            "height": geometry.height,
+            "scale": geometry.scale,
+            "count": legend.len(),
+            "legend": legend,
+        })
     }
 
     /// The text element that has the keyboard, if exactly one does.
@@ -1966,5 +2015,22 @@ mod pinch_tests {
         }
         let fail = s.cmd_pinch(args(json!({"direction": "in", "at": 7}))).await.unwrap_err();
         assert_eq!(fail.outcome, Outcome::NotSent);
+    }
+}
+
+#[cfg(test)]
+mod screenshot_tests {
+    use super::{ScreenshotArgs, parse_args};
+    use serde_json::json;
+
+    #[test]
+    fn annotate_and_all_are_optional_and_all_needs_annotate() {
+        let plain: ScreenshotArgs = parse_args(&json!({"path": "/tmp/a.png"})).unwrap();
+        assert!(!plain.annotate && !plain.all && plain.check().is_ok());
+        let both: ScreenshotArgs = parse_args(&json!({"path": "/tmp/a.png", "annotate": true, "all": true})).unwrap();
+        assert!(both.check().is_ok());
+        let alone: ScreenshotArgs = parse_args(&json!({"path": "/tmp/a.png", "all": true})).unwrap();
+        assert_eq!(alone.check().unwrap_err().message, "`all` goes with `annotate`");
+        assert!(parse_args::<ScreenshotArgs>(&json!({"path": "/tmp/a.png", "legend": true})).is_err());
     }
 }
