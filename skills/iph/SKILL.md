@@ -40,12 +40,13 @@ Frequent `error.code`s: `not_found` (`screen_summary.labels` shows what is on sc
 
 A notification banner drops over the top of the screen, is not in the element list, and takes the tap meant for what is under it. iph does not switch Focus by itself, and you do not need to either: start the work without it. Only when a banner has taken a tap in this work, turn Do Not Disturb on with `iph dnd on` (MCP: `iph_dnd` with `"action": "on"`; 11 to 36 s, Control Center shows for a moment), and put the user's Focus back with `iph dnd off` when the work is done; until then the user misses notifications.
 
-## Evidence: recordings
+## Evidence: recordings and annotated screenshots
 
 For a test run whose result someone will review, keep visual evidence:
 
-- `iph record start -o <abs path>.mp4` before the steps and `iph record stop` after (MCP: `iph_record` with `"action"`). Everything else keeps working in between. `stop` returns `path`, `duration_s`, `frames` and `lost_packets`, plus `first_loss_s` and a `warning` (`packets_lost`) when packets were lost. The phone shows its screen-sharing indicator while it records. Recordings show the user's data, so keep them where the user asked.
+- `iph record start -o <abs path>.mp4` before the steps and `iph record stop` after (MCP: `iph_record` with `"action"`). Everything else keeps working in between. `stop` returns `path`, `duration_s`, `frames` and `lost_packets`, plus `first_loss_s` and a `warning` (`packets_lost`) when packets were lost. The phone shows its screen-sharing indicator while it records.
 - Record over USB. The phone sends one keyframe, at the start, so a single lost packet damages the rest of the file, though players still open it. Over Wi-Fi, 2 of 9 short recordings lost packets in testing. On a `packets_lost` warning, report that the video is likely damaged from `first_loss_s` on, and record again over USB if the evidence matters. Stop every recording you start: one left running keeps the phone encoding video until `record_max_secs` (30 minutes by default) ends it. A recording that ended on its own (`ended_reason`) is reported by `stop`, or by the next `start` under `previous`. A command that times out, or a connection error, resets the connection and ends a running recording with it; start a new one if the evidence still matters.
+- `iph screenshot --annotate -o <abs path>.png` numbers the elements a user can act on and returns a `legend` (`n`, `id`, `role`, `label`, `frame`); refer to elements by those numbers in a report. `screen_changed` means an element appeared, went away or moved while it was taken (a ticking value does not count): take it again. Recordings and screenshots show the user's data, so keep them where the user asked.
 
 ## Money, messages, orders
 
@@ -127,7 +128,7 @@ After `launch`, that app must stay in front; if another one comes up, the script
 
 ## Commands at a glance
 
-`read`, `find`, `tap`, `swipe`, `pinch`, `scroll`, `type`, `key`, `button`, `launch`, `apps` (bundle ids), `screenshot`, `record`, `script`, `run`, `scripts`, `batch`, `dnd`, `doctor`, `connect --ip <IP>`, `devices`, `stop`. `iph <command> --help` has the flags; add `--human` to read a result yourself.
+`read`, `find`, `tap`, `swipe`, `pinch`, `scroll`, `type`, `key`, `button`, `launch`, `apps` (bundle ids), `screenshot` (`--annotate`), `record`, `script`, `run`, `scripts`, `batch`, `dnd`, `doctor`, `connect --ip <IP>`, `devices`, `stop`. `iph <command> --help` has the flags; add `--human` to read a result yourself.
 
 ## When something is off
 

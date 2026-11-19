@@ -97,7 +97,7 @@ Every command outputs JSON by default; pass `--human` for human-readable output.
 - `iph key <key>` — send keys (`return`, `esc`, `tab`, `cmd+a`, etc.)
 - `iph button <home|lock|volume_up|volume_down>` — press hardware buttons
 - `iph launch <bundle id | name> [--restart] [--env K=V]... [-- <args>...]` / `iph apps` — launch or list apps
-- `iph screenshot [-o file]` — capture PNG screenshot
+- `iph screenshot [-o file] [--annotate [--all]]` — capture PNG screenshot; `--annotate` numbers the actionable elements and returns a legend
 - `iph record <start|stop|status> [-o file.mp4] [--display N]` — record the screen to an MP4 (HEVC) while other commands run; record over USB; ends by itself after `record_max_secs` (default 1800)
 - `iph batch <file | ->` — execute a JSON array of steps in one call
 - `iph script <file | -> [--arg k=v]` — run QuickJS JavaScript automation in one call

@@ -150,7 +150,7 @@ Every command prints JSON; add `--human` for people. The device is chosen by `--
 | `iph key <key>` | `return`, `esc`, `tab`, `cmd+a` … |
 | `iph button <home\|lock\|volume_up\|volume_down>` | Hardware buttons |
 | `iph launch <bundle id \| name> [--restart] [--env K=V]… [-- <arguments>…]` / `iph apps` | Launch an app, list apps. `--env` sets environment variables and what follows `--` goes to the app as launch arguments (`iph launch com.example.app --env TZ=UTC -- -AppleLanguages "(ko)"`). Either one restarts a running app, since only a new process takes them; the result says `restart_implied`, with the arguments and the variable names (never their values) |
-| `iph screenshot [-o file]` | PNG capture |
+| `iph screenshot [-o file] [--annotate [--all]]` | PNG capture. `--annotate` numbers the elements on it and returns a legend |
 | `iph record <start\|stop\|status> [-o file.mp4] [--display N]` | Record the screen to an MP4 file while other commands run |
 | `iph batch <file \| ->` | A JSON array of steps in one call |
 | `iph script <file \| -> [--arg k=v]` | Run JavaScript as given (`-` reads stdin) |
@@ -238,9 +238,9 @@ iph does not judge what it presses. Pay, send and order buttons are pressed like
 - **Needs:** the Focus control on Control Center's first page, and Control Center opening while an app is in front. For a phone in a language other than Korean or English, put the names the phone shows in `control` and `focus` under `[dnd]`.
 - **Not covered:** whatever comes through Do Not Disturb (alarms and timers, emergency alerts, people and apps allowed in the Do Not Disturb settings) and system pop-ups. Whether banners really stay away while Do Not Disturb is on was not tested separately (it relies on how iOS behaves).
 
-## Recordings
+## Recordings and annotated screenshots
 
-Visual evidence for a test run, made by `iph` itself: no ffmpeg is needed.
+Visual evidence for a test run, made by `iph` itself: no ffmpeg or image library is needed.
 
 **Recording.** `iph record start -o run.mp4` starts writing the screen to an MP4 (HEVC, as the phone sends it), and `iph record stop` ends it and returns `{path, duration_s, frames, keyframes, lost_packets, bytes, width, height}`, with `first_loss_s` and a `packets_lost` warning when packets were lost. `iph record status` shows the state. Taps, swipes and reads keep working while it runs (tap latency was the same with and without a recording). One recording at a time: a second `start` fails with `recording_running` and a `stop` with nothing running with `no_recording`, and neither changes anything.
 
@@ -252,6 +252,12 @@ Visual evidence for a test run, made by `iph` itself: no ffmpeg is needed.
 - **Ending on its own:** a recording also ends, and its file is completed with what came, when the connection to the phone is closed, or reset after a connection error, an accessibility service that would not open, or a command that ran out of time (not when only the accessibility connection or the input session is made again), when the phone stops sending the video (none for 2.5 s, and the phone no longer lists the stream or did not answer three checks in a row), when the phone changes the video's parameter sets, or after `record_max_secs` (`[daemon]` in `config.toml`, default 1800: at the phone's cap of 6 Mbit/s, 30 minutes is up to 1.4 GB). The reason is in `ended_reason`. `stop` returns that report, or else the next `start` does, under `previous`. The resident process does not exit for being idle while it records, nor for its idle time after a recording ended with nobody told.
 - **Scripts:** a recording a script started and did not stop ends with the script, also when the script throws, and the script's result has its report under `recording`.
 - Measured on an iPhone Duo (iOS 27.2.1, folded, USB): 1408x2048, 50 to 52 fps while the screen moves, about 0.5 Mbit/s.
+
+**Annotated screenshot.** `iph screenshot --annotate -o shot.png` outlines the elements a user can act on (an interactive role or the button trait, on screen, under half the screen), numbers them top to bottom, and returns `legend: [{n, id, role, label, frame}]` with `width`, `height` and `scale`. `--all` takes every on-screen element of that size. The `id` is the one `iph read` gives, so `iph tap id=<id>` presses element `n`.
+
+- The screen is read before and after the picture. If the boxes to draw differ between the two readings (which elements, or where), nothing is written and the result is `screen_changed`; a value or a label that ticks, such as a running stopwatch, does not count. A picture of another display is `display_mismatch`.
+- The PNG is written again as 8-bit RGB with the phone's colour profile kept. A PNG other than non-interlaced 8- or 16-bit RGB or RGBA is refused with `unsupported_png`.
+- About 2 s in all, most of it the two readings. The numbers are legible at 400 px wide.
 
 ## Scripts
 
